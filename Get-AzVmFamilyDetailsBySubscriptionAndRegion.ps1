@@ -504,7 +504,10 @@ function Get-CpuArchitectureOutput {
     }
 
     $normalizedSkuName = $SkuName -replace '^(?i)Standard_', ''
-    if ($VMFamily -match '^(?i).+a(d)?s?v\d+$' -or $normalizedSkuName -match '^(?i)[A-Z]+\d+a(d)?l?s?_v\d+$') {
+    $amdFamilyPattern = '(?i)^[A-Z]+a(?:l)?(?:d)?s?(?:[A-Z0-9]+)?v\d+(?:_[A-Z0-9]+)?$'
+    $amdSkuPattern = '(?i)^[A-Z]+\d+[A-Z]*a(?:l)?(?:d)?s?(?:[A-Z0-9]+)?(?:_[A-Z0-9]+)?_v\d+$'
+
+    if ($VMFamily -match $amdFamilyPattern -or $normalizedSkuName -match $amdSkuPattern) {
         return 'AMD'
     }
 
