@@ -1,0 +1,18 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "Resolve-Path": true,
+        "Get-Command": true,
+        ".\\Get-AzVmFamilyDetailsBySubscriptionAndRegion.ps1": true,
+        "Get-AzContext": true,
+        "Set-AzContext": true,
+        "Get-AzComputeResourceSku": true,
+        "ForEach-Object": true,
+        "Group-Object": true,
+        ".\\Update-RetiredAzVmSizesFile.ps1": true,
+        "ConvertFrom-Json": true,
+        "/^\\$sku = Get-AzComputeResourceSku -Location uksouth \\| Where-Object \\{ \\$_\\.ResourceType -eq 'virtualMachines' -and \\$_\\.Name -match 'Standard_\\(D2ps_v5\\|D2as_v5\\|D2s_v5\\)' \\} \\| Select-Object -First 6; foreach \\(\\$item in \\$sku\\) \\{ \\$cap = \\$item\\.Capabilities \\| Where-Object \\{ \\$_\\.Name -match 'Architecture\\|CPU\\|Cpu\\|Processor' \\}; \\[pscustomobject\\]@\\{ Name = \\$item\\.Name; Family = \\$item\\.Family; Capabilities = \\(\\(\\$cap \\| ForEach-Object \\{ \"\\$\\(\\$_\\.Name\\)=\\$\\(\\$_\\.Value\\)\" \\}\\) -join '; '\\) \\} \\} \\| Format-Table -AutoSize$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}

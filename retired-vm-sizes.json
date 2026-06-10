@@ -1,0 +1,177 @@
+{
+  "SourceUrl": "https://raw.githubusercontent.com/MicrosoftDocs/azure-compute-docs/main/articles/virtual-machines/sizes/retirement/retired-sizes-list.md",
+  "LearnUrl": "https://learn.microsoft.com/azure/virtual-machines/sizes/retirement/retired-sizes-list",
+  "GeneratedAtUtc": "2026-06-10T14:42:54.2581645Z",
+  "Families": [
+    {
+      "Type": "Family",
+      "Name": "Av2",
+      "Status": "Announced",
+      "SourceName": "Av2/Amv2-series",
+      "RetirementAnnouncement": "10/15/25",
+      "PlannedRetirementDate": "11/15/28"
+    },
+    {
+      "Type": "Family",
+      "Name": "BS",
+      "Status": "Announced",
+      "SourceName": "B-series (V1)",
+      "RetirementAnnouncement": "10/15/25",
+      "PlannedRetirementDate": "11/15/28"
+    },
+    {
+      "Type": "Family",
+      "Name": "D",
+      "Status": "Announced",
+      "SourceName": "D-series",
+      "RetirementAnnouncement": "03/31/25",
+      "PlannedRetirementDate": "05/01/28"
+    },
+    {
+      "Type": "Family",
+      "Name": "DS",
+      "Status": "Announced",
+      "SourceName": "Ds-series",
+      "RetirementAnnouncement": "03/31/25",
+      "PlannedRetirementDate": "05/01/28"
+    },
+    {
+      "Type": "Family",
+      "Name": "DSv2",
+      "Status": "Announced",
+      "SourceName": "Dsv2-series",
+      "RetirementAnnouncement": "03/31/25",
+      "PlannedRetirementDate": "05/01/28"
+    },
+    {
+      "Type": "Family",
+      "Name": "Dv2",
+      "Status": "Announced",
+      "SourceName": "Dv2-series",
+      "RetirementAnnouncement": "03/31/25",
+      "PlannedRetirementDate": "05/01/28"
+    },
+    {
+      "Type": "Family",
+      "Name": "F",
+      "Status": "Announced",
+      "SourceName": "F-series",
+      "RetirementAnnouncement": "10/15/25",
+      "PlannedRetirementDate": "11/15/28"
+    },
+    {
+      "Type": "Family",
+      "Name": "FS",
+      "Status": "Announced",
+      "SourceName": "Fs-series",
+      "RetirementAnnouncement": "10/15/25",
+      "PlannedRetirementDate": "11/15/28"
+    },
+    {
+      "Type": "Family",
+      "Name": "FSv2",
+      "Status": "Announced",
+      "SourceName": "Fsv2-series",
+      "RetirementAnnouncement": "10/15/25",
+      "PlannedRetirementDate": "11/15/28"
+    },
+    {
+      "Type": "Family",
+      "Name": "G",
+      "Status": "Announced",
+      "SourceName": "G-series",
+      "RetirementAnnouncement": "10/15/25",
+      "PlannedRetirementDate": "11/15/28"
+    },
+    {
+      "Type": "Family",
+      "Name": "GS",
+      "Status": "Announced",
+      "SourceName": "Gs-series",
+      "RetirementAnnouncement": "10/15/25",
+      "PlannedRetirementDate": "11/15/28"
+    },
+    {
+      "Type": "Family",
+      "Name": "LS",
+      "Status": "Announced",
+      "SourceName": "Ls-series",
+      "RetirementAnnouncement": "03/31/25",
+      "PlannedRetirementDate": "05/01/28"
+    },
+    {
+      "Type": "Family",
+      "Name": "LSv2",
+      "Status": "Announced",
+      "SourceName": "Lsv2-series",
+      "RetirementAnnouncement": "10/15/25",
+      "PlannedRetirementDate": "11/15/28"
+    },
+    {
+      "Type": "Family",
+      "Name": "NCSv3",
+      "Status": "Retired",
+      "SourceName": "NCv3-NC24rs Series",
+      "RetirementAnnouncement": "-",
+      "PlannedRetirementDate": "30/9/25"
+    },
+    {
+      "Type": "Family",
+      "Name": "NPS",
+      "Status": "Announced",
+      "SourceName": "NP-series",
+      "RetirementAnnouncement": "04/02/2026",
+      "PlannedRetirementDate": "05/31/27"
+    },
+    {
+      "Type": "Family",
+      "Name": "NVSv3",
+      "Status": "Announced",
+      "SourceName": "NVv3-series",
+      "RetirementAnnouncement": "04/15/25",
+      "PlannedRetirementDate": "09/30/26"
+    },
+    {
+      "Type": "Family",
+      "Name": "NVSv4",
+      "Status": "Announced",
+      "SourceName": "NVv4-series",
+      "RetirementAnnouncement": "04/15/25",
+      "PlannedRetirementDate": "09/30/26"
+    }
+  ],
+  "Skus": [
+    {
+      "Type": "Sku",
+      "Name": "Standard_M192idms_v2",
+      "Status": "Announced",
+      "SourceName": "Standard_M192idms_v2",
+      "RetirementAnnouncement": "03/22/2024",
+      "PlannedRetirementDate": "03/31/27"
+    },
+    {
+      "Type": "Sku",
+      "Name": "Standard_M192ids_v2",
+      "Status": "Announced",
+      "SourceName": "Standard_M192ids_v2",
+      "RetirementAnnouncement": "03/22/2024",
+      "PlannedRetirementDate": "03/31/27"
+    },
+    {
+      "Type": "Sku",
+      "Name": "Standard_M192ims_v2",
+      "Status": "Announced",
+      "SourceName": "Standard_M192ims_v2",
+      "RetirementAnnouncement": "03/22/2024",
+      "PlannedRetirementDate": "03/31/27"
+    },
+    {
+      "Type": "Sku",
+      "Name": "Standard_M192is_v2",
+      "Status": "Announced",
+      "SourceName": "Standard_M192is_v2",
+      "RetirementAnnouncement": "03/22/2024",
+      "PlannedRetirementDate": "03/31/27"
+    }
+  ]
+}
