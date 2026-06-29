@@ -1,7 +1,7 @@
 {
   "SourceUrl": "https://raw.githubusercontent.com/MicrosoftDocs/azure-compute-docs/main/articles/virtual-machines/sizes/retirement/retired-sizes-list.md",
   "LearnUrl": "https://learn.microsoft.com/azure/virtual-machines/sizes/retirement/retired-sizes-list",
-  "GeneratedAtUtc": "2026-06-10T14:42:54.2581645Z",
+  "GeneratedAtUtc": "2026-06-29T15:45:19.3858669Z",
   "Families": [
     {
       "Type": "Family",
