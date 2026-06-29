@@ -68,12 +68,13 @@ Describe 'Get-AzVmFamilyDetailsBySubscriptionAndRegion -LocalTemporaryDisk' {
         function Set-AzContext { [CmdletBinding()] param($Context, $SubscriptionId) $script:MockContext }
         function Get-AzComputeResourceSku { [CmdletBinding()] param($Location) $script:MockSkus }
 
-        # Synthetic SKUs covering every local-temp-disk detection path.
-        #   DSv3  : two SKUs, temp disk via MaxResourceVolumeMB (older family)  -> True
-        #   DDSv6 : 'd' in name, no MaxResourceVolumeMB (newer NVMe family)     -> True
-        #   EDSv5 : 'd' in a constrained-vCPU name, no MaxResourceVolumeMB      -> True
-        #   DSv6  : no 'd', no MaxResourceVolumeMB                              -> False
-        #   DASv5 : no 'd', MaxResourceVolumeMB = 0                            -> False
+        # Synthetic SKUs covering every local-temp-disk detection path. Family labels use the
+        # documented casing recovered from the size name (Azure metadata is all-uppercase).
+        #   Dsv3  : two SKUs, temp disk via MaxResourceVolumeMB (older family)  -> True
+        #   Ddsv6 : 'd' in name, no MaxResourceVolumeMB (newer NVMe family)     -> True
+        #   Edsv5 : 'd' in a constrained-vCPU name, no MaxResourceVolumeMB      -> True
+        #   Dsv6  : no 'd', no MaxResourceVolumeMB                              -> False
+        #   Dasv5 : no 'd', MaxResourceVolumeMB = 0                            -> False
         $script:FullMockSkus = @(
             New-MockSku -Name 'Standard_D2s_v3'    -Family 'standardDSv3Family'  -MaxResourceVolumeMB 16384
             New-MockSku -Name 'Standard_D4s_v3'    -Family 'standardDSv3Family'  -MaxResourceVolumeMB 32768 -Vcpus '4'
@@ -81,6 +82,21 @@ Describe 'Get-AzVmFamilyDetailsBySubscriptionAndRegion -LocalTemporaryDisk' {
             New-MockSku -Name 'Standard_E8-2ds_v5' -Family 'standardEDSv5Family' -Vcpus '8'
             New-MockSku -Name 'Standard_D2s_v6'    -Family 'standardDSv6Family'  -DiskControllerTypes 'NVMe'
             New-MockSku -Name 'Standard_D2as_v5'   -Family 'standardDASv5Family' -MaxResourceVolumeMB 0
+        )
+
+        # Synthetic SKUs for the CPU-architecture and retirement-status filters. Family labels use
+        # the documented casing recovered from the size name.
+        #   Dsv5  : Intel, Available
+        #   Dasv5 : AMD,   Available
+        #   Dpsv6 : ARM,   Available
+        #   Fsv2  : Intel, Retirement Announced (embedded retirement map)
+        #   NCsv3 : Intel, Retired              (embedded retirement map)
+        $script:FilterMockSkus = @(
+            New-MockSku -Name 'Standard_D2s_v5'  -Family 'standardDSv5Family'  -MaxResourceVolumeMB 16384 -CpuArchitectureType 'x64'
+            New-MockSku -Name 'Standard_D2as_v5' -Family 'standardDASv5Family' -MaxResourceVolumeMB 16384 -CpuArchitectureType 'x64'
+            New-MockSku -Name 'Standard_D2ps_v6' -Family 'standardDPSv6Family' -DiskControllerTypes 'NVMe' -CpuArchitectureType 'Arm64'
+            New-MockSku -Name 'Standard_F2s_v2'  -Family 'standardFSv2Family'  -MaxResourceVolumeMB 8192  -CpuArchitectureType 'x64'
+            New-MockSku -Name 'Standard_NC6s_v3' -Family 'standardNCSv3Family' -MaxResourceVolumeMB 8192  -CpuArchitectureType 'x64'
         )
 
         # Dot-source the script once with no SKUs so its functions (for example
@@ -102,6 +118,26 @@ Describe 'Get-AzVmFamilyDetailsBySubscriptionAndRegion -LocalTemporaryDisk' {
                 -SubscriptionId $script:TestSubscriptionId `
                 -LocalTemporaryDisk $LocalTemporaryDisk `
                 -WarningAction SilentlyContinue
+            return $result
+        }
+
+        # Runs the full script pipeline against a given SKU set and parameter splat,
+        # returning the family-level result objects. Discards the Format-Table output.
+        function Invoke-ScriptResult {
+            param(
+                [Parameter(Mandatory)][object[]]$Skus,
+                [hashtable]$Parameters = @{}
+            )
+
+            $script:MockSkus = $Skus
+            $splat = @{
+                Location       = 'uksouth'
+                SubscriptionId = $script:TestSubscriptionId
+                WarningAction  = 'SilentlyContinue'
+            }
+            foreach ($key in $Parameters.Keys) { $splat[$key] = $Parameters[$key] }
+
+            $null = . $script:ScriptUnderTest @splat
             return $result
         }
     }
@@ -140,16 +176,73 @@ Describe 'Get-AzVmFamilyDetailsBySubscriptionAndRegion -LocalTemporaryDisk' {
         }
     }
 
+    Context 'Get-NormalizedVmFamily (unit)' {
+        It 'recovers the documented casing from the SKU name (DSv3 -> Dsv3)' {
+            $sku = [pscustomobject]@{ Name = 'Standard_D2s_v3'; Family = 'standardDSv3Family' }
+            Get-NormalizedVmFamily -Sku $sku | Should -BeExactly 'Dsv3'
+        }
+
+        It 'recovers the documented casing for an AMD family (DADSv5 -> Dadsv5)' {
+            $sku = [pscustomobject]@{ Name = 'Standard_D2ads_v5'; Family = 'standardDADSv5Family' }
+            Get-NormalizedVmFamily -Sku $sku | Should -BeExactly 'Dadsv5'
+        }
+
+        It 'recovers the documented casing for a constrained-vCPU name (LASv3 -> Lasv3)' {
+            $sku = [pscustomobject]@{ Name = 'Standard_L8as_v3'; Family = 'standardLASv3Family' }
+            Get-NormalizedVmFamily -Sku $sku | Should -BeExactly 'Lasv3'
+        }
+
+        It 'preserves an uppercase subfamily letter (NV16as_v4 -> NVasv4)' {
+            $sku = [pscustomobject]@{ Name = 'Standard_NV16as_v4'; Family = 'standardNVASv4Family' }
+            Get-NormalizedVmFamily -Sku $sku | Should -BeExactly 'NVasv4'
+        }
+
+        It 'preserves a confidential subfamily letter (DC2ads_v5 -> DCadsv5)' {
+            $sku = [pscustomobject]@{ Name = 'Standard_DC2ads_v5'; Family = 'standardDCADSv5Family' }
+            Get-NormalizedVmFamily -Sku $sku | Should -BeExactly 'DCadsv5'
+        }
+
+        It 'keeps the memory-bandwidth b of the Eb family (E96bds_v5 -> Ebdsv5)' {
+            $sku = [pscustomobject]@{ Name = 'Standard_E96bds_v5'; Family = 'standardEBDSv5Family' }
+            Get-NormalizedVmFamily -Sku $sku | Should -BeExactly 'Ebdsv5'
+        }
+
+        It 'keeps the Azure family label when the SKU name differs by more than case' {
+            # Accelerator families (Azure metadata "NCASv3_T4") do not match the size-name token
+            # case-insensitively, so the Azure-derived label is preserved unchanged.
+            $sku = [pscustomobject]@{ Name = 'Standard_NC4as_T4_v3'; Family = 'standardNCASv3_T4Family' }
+            Get-NormalizedVmFamily -Sku $sku | Should -BeExactly 'NCASv3_T4'
+        }
+
+        It 'trims whitespace left by stripping the standard/family tokens' {
+            $sku = [pscustomobject]@{ Name = 'Standard_NC4as_T4_v3'; Family = 'Standard NCASv3_T4 Family' }
+            $normalized = Get-NormalizedVmFamily -Sku $sku
+            $normalized | Should -BeExactly 'NCASv3_T4'
+            $normalized | Should -Not -Match '^\s'
+            $normalized | Should -Not -Match '\s$'
+        }
+
+        It 'falls back to the SKU name when Family is absent' {
+            $sku = [pscustomobject]@{ Name = 'Standard_D2s_v3' }
+            Get-NormalizedVmFamily -Sku $sku | Should -BeExactly 'D2s_v3'
+        }
+
+        It 'maps the non-standard DDCSv3 Azure family metadata to the documented DCdsv3 series' {
+            $sku = [pscustomobject]@{ Name = 'Standard_DC2ds_v3'; Family = 'standardDDCSv3Family' }
+            Get-NormalizedVmFamily -Sku $sku | Should -BeExactly 'DCdsv3'
+        }
+    }
+
     Context 'End-to-end -LocalTemporaryDisk filtering' {
         It 'Required returns only families that have a local temporary disk' {
             $result = Invoke-ScriptForLocalTemporaryDisk -LocalTemporaryDisk 'Required'
             $families = @($result | ForEach-Object { $_.VMFamily })
 
-            $families | Should -Contain 'DSv3'
-            $families | Should -Contain 'DDSv6'
-            $families | Should -Contain 'EDSv5'
-            $families | Should -Not -Contain 'DSv6'
-            $families | Should -Not -Contain 'DASv5'
+            $families | Should -Contain 'Dsv3'
+            $families | Should -Contain 'Ddsv6'
+            $families | Should -Contain 'Edsv5'
+            $families | Should -Not -Contain 'Dsv6'
+            $families | Should -Not -Contain 'Dasv5'
 
             # Every returned family must actually have a local temporary disk.
             @($result | Where-Object { -not $_.HasLocalTemporaryDisk }) | Should -BeNullOrEmpty
@@ -159,11 +252,11 @@ Describe 'Get-AzVmFamilyDetailsBySubscriptionAndRegion -LocalTemporaryDisk' {
             $result = Invoke-ScriptForLocalTemporaryDisk -LocalTemporaryDisk 'Excluded'
             $families = @($result | ForEach-Object { $_.VMFamily })
 
-            $families | Should -Contain 'DSv6'
-            $families | Should -Contain 'DASv5'
-            $families | Should -Not -Contain 'DSv3'
-            $families | Should -Not -Contain 'DDSv6'
-            $families | Should -Not -Contain 'EDSv5'
+            $families | Should -Contain 'Dsv6'
+            $families | Should -Contain 'Dasv5'
+            $families | Should -Not -Contain 'Dsv3'
+            $families | Should -Not -Contain 'Ddsv6'
+            $families | Should -Not -Contain 'Edsv5'
 
             # Every returned family must actually lack a local temporary disk.
             @($result | Where-Object { $_.HasLocalTemporaryDisk }) | Should -BeNullOrEmpty
@@ -174,17 +267,105 @@ Describe 'Get-AzVmFamilyDetailsBySubscriptionAndRegion -LocalTemporaryDisk' {
             $byFamily = @{}
             foreach ($row in $result) { $byFamily[$row.VMFamily] = $row }
 
-            $byFamily.Keys | Should -Contain 'DSv3'
-            $byFamily.Keys | Should -Contain 'DDSv6'
-            $byFamily.Keys | Should -Contain 'EDSv5'
-            $byFamily.Keys | Should -Contain 'DSv6'
-            $byFamily.Keys | Should -Contain 'DASv5'
+            $byFamily.Keys | Should -Contain 'Dsv3'
+            $byFamily.Keys | Should -Contain 'Ddsv6'
+            $byFamily.Keys | Should -Contain 'Edsv5'
+            $byFamily.Keys | Should -Contain 'Dsv6'
+            $byFamily.Keys | Should -Contain 'Dasv5'
 
-            $byFamily['DSv3'].HasLocalTemporaryDisk  | Should -BeTrue
-            $byFamily['DDSv6'].HasLocalTemporaryDisk | Should -BeTrue
-            $byFamily['EDSv5'].HasLocalTemporaryDisk | Should -BeTrue
-            $byFamily['DSv6'].HasLocalTemporaryDisk  | Should -BeFalse
-            $byFamily['DASv5'].HasLocalTemporaryDisk | Should -BeFalse
+            $byFamily['Dsv3'].HasLocalTemporaryDisk  | Should -BeTrue
+            $byFamily['Ddsv6'].HasLocalTemporaryDisk | Should -BeTrue
+            $byFamily['Edsv5'].HasLocalTemporaryDisk | Should -BeTrue
+            $byFamily['Dsv6'].HasLocalTemporaryDisk  | Should -BeFalse
+            $byFamily['Dasv5'].HasLocalTemporaryDisk | Should -BeFalse
+        }
+    }
+
+    Context 'End-to-end -CPUArchitecture filtering' {
+        It 'AMD returns only AMD families' {
+            $result = Invoke-ScriptResult -Skus $script:FilterMockSkus -Parameters @{ CPUArchitecture = 'AMD' }
+            $families = @($result | ForEach-Object { $_.VMFamily })
+
+            $families | Should -Contain 'Dasv5'
+            $families | Should -Not -Contain 'Dsv5'
+            $families | Should -Not -Contain 'Dpsv6'
+            @($result | Where-Object { $_.CPUArchitecture -ne 'AMD' }) | Should -BeNullOrEmpty
+        }
+
+        It 'ARM returns only ARM families' {
+            $result = Invoke-ScriptResult -Skus $script:FilterMockSkus -Parameters @{ CPUArchitecture = 'ARM' }
+            $families = @($result | ForEach-Object { $_.VMFamily })
+
+            $families | Should -Contain 'Dpsv6'
+            $families | Should -Not -Contain 'Dasv5'
+            @($result | Where-Object { $_.CPUArchitecture -ne 'ARM' }) | Should -BeNullOrEmpty
+        }
+
+        It 'Intel returns only Intel families' {
+            $result = Invoke-ScriptResult -Skus $script:FilterMockSkus -Parameters @{ CPUArchitecture = 'Intel' }
+            $families = @($result | ForEach-Object { $_.VMFamily })
+
+            $families | Should -Contain 'Dsv5'
+            $families | Should -Not -Contain 'Dasv5'
+            $families | Should -Not -Contain 'Dpsv6'
+            @($result | Where-Object { $_.CPUArchitecture -ne 'Intel' }) | Should -BeNullOrEmpty
+        }
+
+        It 'accepts multiple architectures and returns families matching any of them' {
+            $result = Invoke-ScriptResult -Skus $script:FilterMockSkus -Parameters @{ CPUArchitecture = @('Intel', 'AMD') }
+            $families = @($result | ForEach-Object { $_.VMFamily })
+
+            $families | Should -Contain 'Dsv5'
+            $families | Should -Contain 'Dasv5'
+            $families | Should -Not -Contain 'Dpsv6'
+            @($result | Where-Object { $_.CPUArchitecture -notin @('Intel', 'AMD') }) | Should -BeNullOrEmpty
+        }
+    }
+
+    Context 'End-to-end -RetirementStatus filtering' {
+        It 'Retired returns only retired families' {
+            $result = Invoke-ScriptResult -Skus $script:FilterMockSkus -Parameters @{ RetirementStatus = 'Retired' }
+            $families = @($result | ForEach-Object { $_.VMFamily })
+
+            $families | Should -Contain 'NCsv3'
+            $families | Should -Not -Contain 'Fsv2'
+            $families | Should -Not -Contain 'Dsv5'
+            @($result | Where-Object { $_.RetirementStatus -ne 'Retired' }) | Should -BeNullOrEmpty
+        }
+
+        It 'Retirement Announced returns only announced families' {
+            $result = Invoke-ScriptResult -Skus $script:FilterMockSkus -Parameters @{ RetirementStatus = 'Retirement Announced' }
+            $families = @($result | ForEach-Object { $_.VMFamily })
+
+            $families | Should -Contain 'Fsv2'
+            $families | Should -Not -Contain 'NCsv3'
+            $families | Should -Not -Contain 'Dsv5'
+            @($result | Where-Object { $_.RetirementStatus -ne 'Retirement Announced' }) | Should -BeNullOrEmpty
+        }
+
+        It 'Available excludes announced and retired families' {
+            $result = Invoke-ScriptResult -Skus $script:FilterMockSkus -Parameters @{ RetirementStatus = 'Available' }
+            $families = @($result | ForEach-Object { $_.VMFamily })
+
+            $families | Should -Contain 'Dsv5'
+            $families | Should -Contain 'Dasv5'
+            $families | Should -Contain 'Dpsv6'
+            $families | Should -Not -Contain 'Fsv2'
+            $families | Should -Not -Contain 'NCsv3'
+            @($result | Where-Object { $_.RetirementStatus -ne 'Available' }) | Should -BeNullOrEmpty
+        }
+    }
+
+    Context 'End-to-end combined filtering' {
+        It 'CPUArchitecture and RetirementStatus together narrow the result' {
+            $result = Invoke-ScriptResult -Skus $script:FilterMockSkus -Parameters @{ CPUArchitecture = 'Intel'; RetirementStatus = 'Retired' }
+            $families = @($result | ForEach-Object { $_.VMFamily })
+
+            $families | Should -Contain 'NCsv3'
+            $families | Should -Not -Contain 'Fsv2'
+            $families | Should -Not -Contain 'Dsv5'
+            $families | Should -Not -Contain 'Dasv5'
+            $families | Should -Not -Contain 'Dpsv6'
         }
     }
 }
