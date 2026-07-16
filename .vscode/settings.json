@@ -18,6 +18,8 @@
         "Install-Module": true,
         "Remove-Module": true,
         "Import-Module": true,
-        "Invoke-Pester": true
+        "Invoke-Pester": true,
+        "Get-AzSubscription": true,
+        "Get-AzTenant": true
     }
 }

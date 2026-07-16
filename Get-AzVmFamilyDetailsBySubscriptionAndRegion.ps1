@@ -186,7 +186,22 @@ if (-not $azContext) {
 $originalAzContext = $azContext
 
 Write-Verbose "Selecting Azure subscription '$SubscriptionId'..."
-$azContext = Set-AzContext -SubscriptionId $SubscriptionId -ErrorAction Stop
+try {
+    $azContext = Set-AzContext -SubscriptionId $SubscriptionId -ErrorAction Stop
+}
+catch {
+    $accountId = $originalAzContext.Account.Id
+    $availableSubscriptions = @(Get-AzSubscription -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Id)
+
+    if ($availableSubscriptions.Count -gt 0) {
+        $availableMessage = "Subscriptions currently accessible to '$accountId': $($availableSubscriptions -join ', ')."
+    }
+    else {
+        $availableMessage = "No subscriptions are currently accessible to '$accountId'."
+    }
+
+    throw "Unable to select subscription '$SubscriptionId'. It may belong to a different Azure AD tenant, or the signed-in account may not have access to it. $availableMessage If the subscription lives in another tenant, run 'Connect-AzAccount -Tenant <tenantId>' to sign in there, then retry. Original error: $($_.Exception.Message)"
+}
 
 # --- Helper functions ---------------------------------------------------------
 
